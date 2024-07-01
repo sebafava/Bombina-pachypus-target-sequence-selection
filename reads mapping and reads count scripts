@@ -1,0 +1,166 @@
+1_star_index.sh
+
+#!/bin/bash
+#PBS -l select=1:ncpus=28:mpiprocs=28
+#PBS -q workq
+
+cd /cluster_data/home/genomic/bombina/B.pachypus/star_mapping
+
+/cluster_data/home/genomic/software/STAR-2.7.9a/source/STAR --runMode genomeGenerate \
+--genomeDir /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/indices \
+--genomeFastaFiles /cluster_data/home/genomic/bombina/B.pachypus/genomeDEF/BoPac.JBAT.review.FINAL.fa \
+--runThreadN 28 \
+--sjdbOverhang 99 \
+--sjdbGTFfile /cluster_data/home/genomic/bombina/B.pachypus/annotation/functional/BoPac.tsebra.pref_braker1.gtf \
+--limitGenomeGenerateRAM 36607186528 \
+
+
+
+
+2_star_align.sh
+
+#!/bin/bash
+#PBS -l select=1:ncpus=34:mpiprocs=34
+#PBS -q workq
+
+fastq=/cluster_data/home/genomic/bombina/B.pachypus/star_mapping/rna_seq_reads
+genomedir=/cluster_data/home/genomic/bombina/B.pachypus/star_mapping/indices
+gtffile=/cluster_data/home/genomic/bombina/B.pachypus/annotation/functional/BoPac.tsebra.pref_braker1.gtf
+starout=/cluster_data/home/genomic/bombina/B.pachypus/star_mapping/mappedToGenome/
+
+cd /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/
+cat /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/list_reads | while read i
+do
+
+/cluster_data/home/genomic/software/STAR-2.7.9a/source/STAR \
+--genomeDir $genomedir \
+--readFilesIn $fastq/"$i"_R1.trimmed.paired.fastq.gz $fastq/"$i"_R2.trimmed.paired.fastq.gz \
+--runThreadN 34 \
+--outSAMstrandField intronMotif \
+--sjdbGTFfile $gtffile \
+--readFilesCommand zcat \
+--outFileNamePrefix $starout/"$i". \
+--outFilterMultimapNmax 10 \
+--outReadsUnmapped Fastx \
+--outSAMtype BAM SortedByCoordinate \
+--quantMode TranscriptomeSAM GeneCounts
+done
+
+
+
+
+3_samtools_index.sh
+
+#!/bin/bash
+#PBS -l select=1:ncpus=34:mpiprocs=34
+#PBS -q workq
+
+cd /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/mappedToGenome
+cat /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/list_reads | while read i
+
+do
+/cluster_data/home/genomic/software/samtools-1.12/samtools index -c "$i".Aligned.sortedByCoord.out.bam
+done
+
+
+
+
+
+
+
+2_star_align_bulk.sh
+
+#!/bin/bash
+#PBS -l select=1:ncpus=19:mpiprocs=19
+#PBS -q workq
+
+fastq=/cluster_data/home/genomic/bombina/B.pachypus/star_mapping/rna_seq_reads_bulk
+genomedir=/cluster_data/home/genomic/bombina/B.pachypus/star_mapping/indices
+gtffile=/cluster_data/home/genomic/bombina/B.pachypus/annotation/functional/BoPac.tsebra.pref_braker1.gtf
+starout=/cluster_data/home/genomic/bombina/B.pachypus/star_mapping/mappedToGenome/
+
+cd /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/
+cat /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/list_reads_bulk | while read i
+do
+
+/cluster_data/home/genomic/software/STAR-2.7.9a/source/STAR \
+--genomeDir $genomedir \
+--readFilesIn $fastq/"$i"_1.fq.gz $fastq/"$i"_2.fq.gz \
+--runThreadN 19 \
+--outSAMstrandField intronMotif \
+--sjdbGTFfile $gtffile \
+--readFilesCommand zcat \
+--outFileNamePrefix $starout/"$i". \
+--outFilterMultimapNmax 10 \
+--outReadsUnmapped Fastx \
+--outSAMtype BAM SortedByCoordinate \
+--quantMode TranscriptomeSAM GeneCounts
+done
+
+
+
+
+
+
+3_samtools_index_bulk.sh
+
+#!/bin/bash
+#PBS -l select=1:ncpus=34:mpiprocs=34
+#PBS -q workq
+
+cd /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/mappedToGenome
+cat /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/list_reads_bulk | while read i
+
+do
+/cluster_data/home/genomic/software/samtools-1.12/samtools index -c "$i".Aligned.sortedByCoord.out.bam
+done
+
+
+
+
+
+
+
+4_htseq.sh
+
+#!/bin/bash
+#PBS -l select=1:ncpus=96:mpiprocs=96
+#PBS -q workq
+
+bamdir=/cluster_data/home/genomic/bombina/B.pachypus/star_mapping/mappedToGenome/
+gtffile=/cluster_data/home/genomic/bombina/B.pachypus/star_mapping/BoPac.tsebra.pref_braker1_exon_number_bypy_clean.gtf
+outdir=/cluster_data/home/genomic/bombina/B.pachypus/star_mapping/htseq
+
+source activate /cluster_data/home/genomic/software/conda_env/htseq
+
+cd /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/mappedToGenome
+
+cat /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/list_reads | while read i
+do
+echo $i
+
+htseq-count -f bam -m union -t exon -i transcript_id --nonunique all $bamdir/"$i".Aligned.sortedByCoord.out.bam $gtffile > $outdir/"$i"-HTSeq.txt
+
+done
+
+
+
+
+
+5_merge_htseq.sh
+
+#!/bin/bash
+#PBS -l select=1:ncpus=10:mpiprocs=10
+#PBS -q workq
+
+cd /cluster_data/home/genomic/bombina/B.pachypus/star_mapping/htseq
+
+FILES=$(ls -t -v *.txt | tr '\n' ' ');
+
+awk 'NF > 1{ a[$1] = a[$1]"\t"$2} END {for( i in a ) print i a[i]}' $FILES > all_quant_htseq.txt
+
+
+
+
+
+
