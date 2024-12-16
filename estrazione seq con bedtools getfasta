@@ -1,0 +1,318 @@
+
+merging per coordinate
+
+cat only_low_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_clean.bed | sort -k1,1 -k2n | bedtools merge -c 4 -o collapse | awk '{sum+=$3-$2-1} END {print sum}'
+
+cat only_low_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_clean.bed | sort -k1,1 -k2n | bedtools merge -c 4 -o collapse > only_low_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_merged.bed
+
+cat only_high_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_clean.bed | sort -k1,1 -k2n | bedtools merge -c 4 -o collapse | awk '{sum+=$3-$2-1} END {print sum}'
+
+cat only_high_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_clean.bed | sort -k1,1 -k2n | bedtools merge -c 4 -o collapse > only_high_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_merged.bed
+
+
+
+#copiare i file
+
+HIGH exp region
+
+scp ./only_high_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_merged.bed sfava@193.205.131.133/cluster_data/home/genomic/bombina/B.pachypus/exon_target_seq
+
+#produrre un file fasta sulla base delle coordinate degli esoni selezionati
+bedtools getfasta -fi BoPac.JBAT.review.FINAL.fa -bed ./only_high_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_merged.bed -fo output_high_exp_UNIQUE_exon_sequences.fa -name -s
+
+#contare le basi del file appena ottenuto
+grep -v '^>' output_high_exp_UNIQUE_exon_sequences.fa | tr -d '\n' | wc -c
+
+#pulire l'header del file fasta
+sed 's/::.*$//' output_high_exp_UNIQUE_exon_sequences.fa > output_high_exp_UNIQUE_exon_sequences_final.fa
+
+
+
+#statistiche output_high_exp_UNIQUE_exon_sequences_final.fa
+
+Number of contigs:	22333
+Total size (bp):	5513902
+N50 (bp):		215
+L50:			6680
+N90 (bp):		160
+L90:			18778
+Mean contig size (bp):	246.894819325662
+Longest contig (bp):	7557
+Third quartile (bp):	227
+Median (bp):		187
+First quartile (bp):	166
+Shortest contig (bp):	151
+Number of Ns:		600
+Number of gaps (/N+/):	4
+Number of other IUPACs:	0
+
+
+
+
+#rimozione delle sequenze che contengono anche solo una N
+
+
+awk '/^>/ {if (seq && seq !~ /N/) print header"\n"seq; header=$0; seq=""} !/^>/ {seq=seq""$0} END {if (seq !~ /N/) print header"\n"seq}' output_high_exp_UNIQUE_exon_sequences_final.fa > output_high_exp_UNIQUE_exon_sequences_final_clean.fa
+
+
+
+togliendo le N perdo 4 seq (600 bp)
+
+#statistiche output_high_exp_UNIQUE_exon_sequences_final_clean.fa
+
+Number of contigs:	22329
+Total size (bp):	5512028
+N50 (bp):		215
+L50:			6681
+N90 (bp):		160
+L90:			18775
+Mean contig size (bp):	246.855121142908
+Longest contig (bp):	7557
+Third quartile (bp):	227
+Median (bp):		187
+First quartile (bp):	166
+Shortest contig (bp):	151
+Number of Ns:		0
+Number of gaps (/N+/):	0
+Number of other IUPACs:	0
+
+
+
+
+
+
+
+LOW exp region
+
+scp ./only_low_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_merged.bed sfava@193.205.131.133/cluster_data/home/genomic/bombina/B.pachypus/exon_target_seq
+
+#produrre un file fasta sulla base delle coordinate degli esoni selezionati
+bedtools getfasta -fi BoPac.JBAT.review.FINAL.fa -bed ./only_low_exp_UNIQUE_exon_7Mb_coord_tissue_strand_type_merged.bed -fo output_low_exp_UNIQUE_exon_sequences.fa -name -s
+
+#contare le basi del file appena ottenuto
+grep -v '^>' output_low_exp_UNIQUE_exon_sequences.fa | tr -d '\n' | wc -c
+
+#pulire l'header del file fasta
+sed 's/::.*$//' output_low_exp_UNIQUE_exon_sequences.fa > output_low_exp_UNIQUE_exon_sequences_final.fa
+
+
+
+statistiche output_low_exp_UNIQUE_exon_sequences_final.fa
+
+
+Number of contigs:	16612
+Total size (bp):	7207705
+N50 (bp):		731
+L50:			2366
+N90 (bp):		179
+L90:			12215
+Mean contig size (bp):	433.885444257163
+Longest contig (bp):	12317
+Third quartile (bp):	395
+Median (bp):		218
+First quartile (bp):	176
+Shortest contig (bp):	151
+Number of Ns:		2500
+Number of gaps (/N+/):	22
+Number of other IUPACs:	0
+
+
+
+
+
+#rimozione delle sequenze che contengono anche solo una N
+awk '/^>/ {if (seq && seq !~ /N/) print header"\n"seq; header=$0; seq=""} !/^>/ {seq=seq""$0} END {if (seq !~ /N/) print header"\n"seq}' output_low_exp_UNIQUE_exon_sequences_final.fa > output_low_exp_UNIQUE_exon_sequences_final_clean.fa
+
+
+togliendo le N perdo 22 seq (2500 bp)
+
+
+
+
+#statistiche output_low_exp_UNIQUE_exon_sequences_final_clean.fa
+
+
+Number of contigs:	16590
+Total size (bp):	7199609
+N50 (bp):		731
+L50:			2363
+N90 (bp):		179
+L90:			12198
+Mean contig size (bp):	433.972814948764
+Longest contig (bp):	12317
+Third quartile (bp):	395
+Median (bp):		218
+First quartile (bp):	176
+Shortest contig (bp):	151
+Number of Ns:		0
+Number of gaps (/N+/):	0
+Number of other IUPACs:	0
+
+
+
+
+
+#################### rimozione di TE dagli esoni ad alta espressione
+
+non avendo il bed dei TE me lo ricavo con awk
+
+awk '{print $1 "\t" $4 "\t" $5 "\t" $7}' TE_B.pachypus.gtf > TE_B.pachypus.bed
+
+
+bedtools=/cluster_data2/new-cluster/work/genomics/software/bedtools-2.31
+genome=/cluster_data/home/genomic/bombina/B.pachypus/genomeDEF/BoPac.JBAT.review.FINAL.fa
+TE_bed=/cluster_data/home/genomic/bombina/B.pachypus/genomeDEF/annotRM/TE_B.pachypus.bed
+##### ad alta espressione
+
+
+$bedtools subtract -a only_high_exp_UNIQUE_exon_coord_tissue_strand_type_merged_clean.bed -b $TE_bed -s > only_high_exp_UNIQUE_exon_coord_tissue_strand_type_merged_clean_noTE.bed
+
+
+#produrre un file fasta sulla base delle coordinate degli esoni selezionati
+$bedtools getfasta -fi $genome -bed ./only_high_exp_UNIQUE_exon_coord_tissue_strand_type_merged_clean_noTE.bed -fo output_high_exp_UNIQUE_exon_sequences_noTE.fa -name -s
+
+Number of contigs:	22329
+Total size (bp):	5512028
+N50 (bp):		215
+L50:			6681
+N90 (bp):		160
+L90:			18775
+Mean contig size (bp):	246.855121142908
+Longest contig (bp):	7557
+Third quartile (bp):	227
+Median (bp):		187
+First quartile (bp):	166
+Shortest contig (bp):	151
+Number of Ns:		0
+Number of gaps (/N+/):	0
+Number of other IUPACs:	0
+
+
+##### a bassa espressione
+
+
+$bedtools subtract -a only_low_exp_UNIQUE_exon_coord_tissue_strand_type_merged_clean.bed -b $TE_bed -s > only_low_exp_UNIQUE_exon_coord_tissue_strand_type_merged_clean_noTE.bed
+
+
+#produrre un file fasta sulla base delle coordinate degli esoni selezionati
+$bedtools getfasta -fi $genome -bed ./only_low_exp_UNIQUE_exon_coord_tissue_strand_type_merged_clean_noTE.bed -fo output_low_exp_UNIQUE_exon_sequences_noTE.fa -name -s
+
+
+
+Number of contigs:	16590
+Total size (bp):	7199609
+N50 (bp):		731
+L50:			2363
+N90 (bp):		179
+L90:			12198
+Mean contig size (bp):	433.972814948764
+Longest contig (bp):	12317
+Third quartile (bp):	395
+Median (bp):		218
+First quartile (bp):	176
+Shortest contig (bp):	151
+Number of Ns:		0
+Number of gaps (/N+/):	0
+Number of other IUPACs:	0
+
+
+
+
+
+#i file ottenuti dall'ultima operazione sono di dimensioni differenti perchè il processo di bedtools getfasta modifica l'header:
+
+#output_low_exp_UNIQUE_exon_sequences_final.fa: 7.9M
+#output_low_exp_UNIQUE_exon_sequences_noTE.fa: 8.5M
+
+#output_high_exp_UNIQUE_exon_sequences_final.fa: 6.6M
+#output_high_exp_UNIQUE_exon_sequences_noTE.fa: 7.3M
+
+#ma hanno entrambi lo stesso numero di basi
+
+
+
+#### ricerca di regioni ripetute con Tandem Repeats Finder
+
+/cluster_data2/new-cluster/work/genomics/software/TRF-4.10.0/build/src/trf ../output_high_exp_UNIQUE_exon_sequences_final_clean_noTE.fa 2 7 7 80 10 50 500 -d -m
+
+                                                                                                                                                     
+output_high_exp_UNIQUE_exon_sequences_final_clean_noTE.fa.2.7.7.80.10.50.500.summary.html
+
+
+
+
+/cluster_data2/new-cluster/work/genomics/software/TRF-4.10.0/build/src/trf ../output_low_exp_UNIQUE_exon_sequences_final_clean_noTE.fa 2 7 7 80 10 50 500 -d -m
+
+
+output_low_exp_UNIQUE_exon_sequences_final_clean_noTE.fa.2.7.7.80.10.50.500.summary.html
+
+
+
+
+grep -v '^>' output_low_exp_UNIQUE_exon_sequences_noTE_noRep_clean.fa | tr -d '\n' | wc -c
+
+
+
+
+#rimozione delle sequenze che contengono anche solo una N
+
+
+High_exp_exon_noTE_noRep
+
+#rimozione delle sequenze che contengono anche solo una N
+awk '/^>/ {if (seq && seq !~ /N/) print header"\n"seq; header=$0; seq=""} !/^>/ {seq=seq""$0} END {if (seq !~ /N/) print header"\n"seq}' output_high_exp_UNIQUE_exon_sequences_noTE_noRep.fa > output_high_exp_UNIQUE_exon_sequences_noTE_noRep_clean.fa
+
+#print esoni ad alta espressione senza N
+grep ">" output_high_exp_UNIQUE_exon_sequences_noTE_noRep_clean.fa > high_exp_exon
+
+
+
+# Formatta la lista per il filtro
+cut -d '>' -f2 high_exp_exon > formatted_exon_list.txt
+
+# Filtra il file BED usando la lista
+grep -Ff formatted_exon_list.txt only_high_exp_UNIQUE_exon_coord_tissue_strand_type_merged_clean_noTE.bed > output_high_exp_UNIQUE_exon_sequences_noTE_noRep_clean.bed
+
+rm formatted_exon_list.txt
+
+
+output: output_high_exp_UNIQUE_exon_sequences_noTE_noRep_clean.fa
+output: output_high_exp_UNIQUE_exon_sequences_noTE_noRep_clean.bed
+
+#printare estenzione fatsa file 
+grep -v '^>' output_high_exp_UNIQUE_exon_sequences_noTE_noRep_clean.fa | tr -d '\n' | wc -c
+#printare estenzione bed file 
+awk '{sum += $3 - $2} END {print sum}' output_high_exp_UNIQUE_exon_sequences_noTE_noRep_clean.bed
+
+5316932 bp
+
+
+Low_exp_exon_noTE_noRep
+
+#rimozione delle sequenze che contengono anche solo una N
+awk '/^>/ {if (seq && seq !~ /N/) print header"\n"seq; header=$0; seq=""} !/^>/ {seq=seq""$0} END {if (seq !~ /N/) print header"\n"seq}' output_low_exp_UNIQUE_exon_sequences_noTE_noRep.fa > output_low_exp_UNIQUE_exon_sequences_noTE_noRep_clean.fa
+
+
+#print esoni a bassa espressione senza N
+grep ">" output_low_exp_UNIQUE_exon_sequences_noTE_noRep_clean.fa > low_exp_exon
+
+
+# Formatta la lista per il filtro
+cut -d '>' -f2 low_exp_exon > formatted_exon_list.txt
+
+# Filtra il file BED usando la lista
+grep -Ff formatted_exon_list.txt only_low_exp_UNIQUE_exon_coord_tissue_strand_type_merged_clean_noTE.bed > output_low_exp_UNIQUE_exon_sequences_noTE_noRep_clean.bed
+
+rm formatted_exon_list.txt
+
+
+output: output_low_exp_UNIQUE_exon_sequences_noTE_noRep_clean.fa
+output: output_low_exp_UNIQUE_exon_sequences_noTE_noRep_clean.bed
+
+
+#printare estenzione fatsa file 
+grep -v '^>' output_low_exp_UNIQUE_exon_sequences_noTE_noRep_clean.fa | tr -d '\n' | wc -c
+#printare estenzione bed file 
+awk '{sum += $3 - $2} END {print sum}' output_low_exp_UNIQUE_exon_sequences_noTE_noRep_clean.bed
+
+6414142 bp
